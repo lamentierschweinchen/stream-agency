@@ -2,6 +2,7 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 DB_PATH="${DB_PATH:-$APP_DIR/agency.db}"
 API_HOST="${API_HOST:-127.0.0.1}"
 API_PORT="${API_PORT:-8787}"

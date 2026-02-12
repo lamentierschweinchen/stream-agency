@@ -83,6 +83,7 @@ Then edit `/etc/stream-agency/stream-agency.env` and set:
 - `API_TOKEN`
 - `ESCROW_CONTRACT`
 - `OPERATOR_PEM`
+- `CLAWPY_BIN` (absolute path, e.g. `/usr/local/bin/clawpy`)
 - Optional `ALERT_WEBHOOK_URL`
 
 Set operator key permissions so the service user can read it:

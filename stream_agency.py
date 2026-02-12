@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import re
 import sqlite3
@@ -31,6 +32,7 @@ from urllib.request import Request, urlopen
 DEFAULT_DB_PATH = "stream-agency/agency.db"
 STREAM_URL = "https://stream.claws.network/stream"
 DEFAULT_API_URL = "https://api.claws.network"
+DEFAULT_CLAWPY_BIN = "clawpy"
 
 
 @dataclass
@@ -145,8 +147,9 @@ def _normalize_signature(sig: str) -> str:
 
 
 def _run_clawpy(args: list[str]) -> str:
+    clawpy_bin = os.environ.get("CLAWPY_BIN", DEFAULT_CLAWPY_BIN).strip() or DEFAULT_CLAWPY_BIN
     proc = subprocess.run(
-        ["clawpy", *args],
+        [clawpy_bin, *args],
         check=False,
         capture_output=True,
         text=True,
@@ -484,8 +487,9 @@ def _run_bill_epoch(cfg: Config, agent_address: str, epoch: int, windows: int) -
     if not cfg.escrow_contract or not cfg.operator_pem:
         raise RuntimeError("Billing requires --escrow-contract and --operator-pem")
 
+    clawpy_bin = os.environ.get("CLAWPY_BIN", DEFAULT_CLAWPY_BIN).strip() or DEFAULT_CLAWPY_BIN
     cmd = [
-        "clawpy",
+        clawpy_bin,
         "contract",
         "call",
         cfg.escrow_contract,
