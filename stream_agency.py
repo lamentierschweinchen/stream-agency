@@ -973,25 +973,30 @@ def make_api_handler(
     return IntakeApiHandler
 
 
-def run_scheduler_loop(conn: sqlite3.Connection, cfg: Config, stop: threading.Event) -> None:
+def run_scheduler_loop(db_path: str, cfg: Config, stop: threading.Event) -> None:
     print(
         f"Scheduler loop started: poll={cfg.poll_interval_seconds}s lead={cfg.lead_seconds}s "
         f"jitter={cfg.jitter_seconds}s reward/window={cfg.reward_per_window} billing={cfg.billing_enabled}"
     )
-    while not stop.is_set():
-        result = execute_tick(conn, cfg)
-        stream_stats = result["stream"]
-        bill_stats = result["billing"]
-        if stream_stats["processed"] > 0 or bill_stats["billing_candidates"] > 0:
-            print(
-                f"{datetime.now(tz=timezone.utc).isoformat()} "
-                f"stream processed={stream_stats['processed']} ok={stream_stats['ok']} fail={stream_stats['fail']} "
-                f"usage+={stream_stats['usage_windows_added']} "
-                f"bill cand={bill_stats['billing_candidates']} ok={bill_stats['billing_ok']} fail={bill_stats['billing_fail']}"
-            )
-        if result["epoch_error"]:
-            print(f"{datetime.now(tz=timezone.utc).isoformat()} epoch-fetch-error: {result['epoch_error']}")
-        stop.wait(cfg.poll_interval_seconds)
+    conn = connect_db(db_path)
+    init_db(conn)
+    try:
+        while not stop.is_set():
+            result = execute_tick(conn, cfg)
+            stream_stats = result["stream"]
+            bill_stats = result["billing"]
+            if stream_stats["processed"] > 0 or bill_stats["billing_candidates"] > 0:
+                print(
+                    f"{datetime.now(tz=timezone.utc).isoformat()} "
+                    f"stream processed={stream_stats['processed']} ok={stream_stats['ok']} fail={stream_stats['fail']} "
+                    f"usage+={stream_stats['usage_windows_added']} "
+                    f"bill cand={bill_stats['billing_candidates']} ok={bill_stats['billing_ok']} fail={bill_stats['billing_fail']}"
+                )
+            if result["epoch_error"]:
+                print(f"{datetime.now(tz=timezone.utc).isoformat()} epoch-fetch-error: {result['epoch_error']}")
+            stop.wait(cfg.poll_interval_seconds)
+    finally:
+        conn.close()
 
 
 def run_api_server(
@@ -1008,13 +1013,10 @@ def run_api_server(
 
     scheduler_stop = threading.Event()
     scheduler_thread = None
-    scheduler_conn = None
     if with_scheduler:
-        scheduler_conn = connect_db(db_path)
-        init_db(scheduler_conn)
         scheduler_thread = threading.Thread(
             target=run_scheduler_loop,
-            args=(scheduler_conn, cfg, scheduler_stop),
+            args=(db_path, cfg, scheduler_stop),
             daemon=True,
         )
         scheduler_thread.start()
@@ -1035,8 +1037,6 @@ def run_api_server(
         scheduler_stop.set()
         if scheduler_thread:
             scheduler_thread.join(timeout=3)
-        if scheduler_conn:
-            scheduler_conn.close()
 
 
 def run_forever(conn: sqlite3.Connection, cfg: Config) -> None:
