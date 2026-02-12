@@ -1,0 +1,11 @@
+[Unit]
+Description=Run stream-agency healthcheck every minute
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=60
+AccuracySec=10
+Unit=stream-agency-healthcheck.service
+
+[Install]
+WantedBy=timers.target

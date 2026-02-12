@@ -59,6 +59,53 @@ python3 stream-agency/stream_agency.py api \
   --api-token change-me
 ```
 
+## Production deployment (systemd + alerts)
+
+Ops files are in `ops/`:
+- `ops/install_systemd.sh`
+- `ops/stream-agency.env.example`
+- `ops/run_stream_agency.sh`
+- `ops/check_health.sh`
+- `ops/systemd/stream-agency.service`
+- `ops/systemd/stream-agency-healthcheck.service`
+- `ops/systemd/stream-agency-healthcheck.timer`
+- `ops/SUBAGENT_INSTRUCTIONS.md`
+
+Install on server:
+
+```bash
+cd /opt/stream-agency
+sudo bash ops/install_systemd.sh
+```
+
+Then edit `/etc/stream-agency/stream-agency.env` and set:
+- `API_TOKEN`
+- `ESCROW_CONTRACT`
+- `OPERATOR_PEM`
+- Optional `ALERT_WEBHOOK_URL`
+
+Set operator key permissions so the service user can read it:
+
+```bash
+sudo chown root:streamagency /etc/stream-agency/operator.pem
+sudo chmod 640 /etc/stream-agency/operator.pem
+```
+
+Start services:
+
+```bash
+sudo systemctl enable --now stream-agency.service
+sudo systemctl enable --now stream-agency-healthcheck.timer
+```
+
+Check status/logs:
+
+```bash
+sudo systemctl status stream-agency --no-pager
+journalctl -u stream-agency -f
+curl -sS http://127.0.0.1:8787/health
+```
+
 ## Commands
 
 - `init-db`

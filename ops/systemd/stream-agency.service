@@ -1,0 +1,23 @@
+[Unit]
+Description=Lobster Lifeguard Stream Agency API + Scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=streamagency
+Group=streamagency
+EnvironmentFile=/etc/stream-agency/stream-agency.env
+WorkingDirectory=/opt/stream-agency
+ExecStart=/opt/stream-agency/ops/run_stream_agency.sh
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/stream-agency /var/log/stream-agency
+
+[Install]
+WantedBy=multi-user.target
