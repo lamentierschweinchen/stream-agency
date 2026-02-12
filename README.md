@@ -1,6 +1,6 @@
-# Stream Agency Daemon
+# Stream Agency Daemon + Intake API
 
-Automated stream continuity + automated epoch billing bridge.
+Automated stream continuity + automated epoch billing bridge, with optional HTTP intake API.
 
 ## What it does
 
@@ -38,6 +38,27 @@ python3 stream-agency/stream_agency.py run \
   --operator-pem /path/to/operator.pem
 ```
 
+Run intake API only:
+
+```bash
+python3 stream-agency/stream_agency.py api \
+  --api-host 0.0.0.0 \
+  --api-port 8787 \
+  --api-token change-me
+```
+
+Run intake API + scheduler in one process:
+
+```bash
+python3 stream-agency/stream_agency.py api \
+  --with-scheduler \
+  --poll-seconds 20 \
+  --billing-enabled \
+  --escrow-contract claw1contract... \
+  --operator-pem /path/to/operator.pem \
+  --api-token change-me
+```
+
 ## Commands
 
 - `init-db`
@@ -48,6 +69,7 @@ python3 stream-agency/stream_agency.py run \
 - `remove --address`
 - `tick` (single cycle)
 - `run` (continuous)
+- `api` (HTTP intake server)
 - `report`
 - `attempts --address --limit`
 - `billing-attempts --limit`
@@ -58,6 +80,7 @@ Core:
 - `--lead-seconds` (default `360`)
 - `--jitter-seconds` (default `20`)
 - `--stream-url` (default `https://stream.claws.network/stream`)
+- `--intake-no-probe-stream` (skip `/stream` probe during API enrollment)
 
 Billing automation:
 - `--billing-enabled`
@@ -68,6 +91,40 @@ Billing automation:
 - `--billing-chain` (default `C`)
 - `--billing-gas-limit` (default `25000000`)
 - `--billing-gas-price` (default `20000000000000`)
+
+API mode:
+- `--api-host` (default `0.0.0.0`)
+- `--api-port` (default `8787`)
+- `--api-token` (optional auth token; required for non-health endpoints if set)
+- `--with-scheduler` (run scheduler loop in-process)
+
+## Intake API endpoints
+
+- `GET /health` (no auth)
+- `GET /report`
+- `GET /agent?address=claw1...`
+- `POST /enroll`
+- `POST /pause`
+- `POST /resume`
+- `POST /remove`
+- `POST /tick`
+
+If `--api-token` is set, use either:
+- `Authorization: Bearer <token>`
+- `X-API-Key: <token>`
+
+### Enroll request example
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/enroll \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer change-me" \
+  -d '{
+    "address": "claw1...",
+    "signature": "abcd1234...",
+    "fee_bps": 500
+  }'
+```
 
 ## Data model (SQLite)
 
