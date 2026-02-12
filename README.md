@@ -7,6 +7,7 @@ Automated stream continuity + automated epoch billing bridge, with optional HTTP
 1. Keeps enrolled agent streams alive (`/stream` renewals)
 2. Tracks successful protected windows per chain epoch
 3. Optionally calls `billEpoch(agent, epoch, windows)` automatically on `StreamAgencyEscrow`
+4. Treats `already_streaming` probe responses as valid coverage and records protected usage windows
 
 ## Quick start
 

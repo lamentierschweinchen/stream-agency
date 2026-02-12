@@ -437,6 +437,7 @@ def process_due_agents(conn: sqlite3.Connection, cfg: Config, chain_epoch: int |
 
         if reason == "already_streaming" and end_stream_ms:
             next_attempt = _next_planned_attempt(end_stream_ms, cfg.lead_seconds, cfg.jitter_seconds)
+            fee = _fee_for_success(cfg.reward_per_window, fee_bps)
             conn.execute(
                 """
                 UPDATE agents
@@ -444,11 +445,18 @@ def process_due_agents(conn: sqlite3.Connection, cfg: Config, chain_epoch: int |
                     expected_end_ms = ?,
                     next_attempt_ms = ?,
                     retry_step = 0,
+                    success_count = success_count + 1,
+                    fee_due_claw = fee_due_claw + ?,
+                    last_success_ms = ?,
+                    last_error = NULL,
                     updated_ms = ?
                 WHERE id = ?
                 """,
-                (end_stream_ms, next_attempt, ts_ms, aid),
+                (end_stream_ms, next_attempt, fee, ts_ms, ts_ms, aid),
             )
+            if chain_epoch is not None:
+                _increment_usage_window(conn, aid, chain_epoch)
+                stats["usage_windows_added"] += 1
             stats["ok"] += 1
             continue
 
